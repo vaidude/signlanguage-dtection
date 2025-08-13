@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Language Recognition</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #video { border: 2px solid #000; }
+        #prediction { font-size: 24px; margin-top: 20px; }
+        #canvas { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Sign Language Recognition</h1>
+    <video id="video" width="320" height="240" autoplay></video>
+    <canvas id="canvas" width="320" height="240"></canvas>
+    <div id="prediction">Predicted Letter: -</div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const predictionDiv = document.getElementById('prediction');
+
+        // Access webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error('Error accessing webcam:', err);
+            });
+
+        // Function to send frame to server
+        function sendFrame() {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            fetch('', {  // POST to the same URL
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'image=' + encodeURIComponent(imageData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.letter) {
+                    predictionDiv.textContent = `Predicted Letter: ${data.letter}`;
+                } else {
+                    predictionDiv.textContent = `Error: ${data.error}`;
+                }
+            })
+            .catch(err => {
+                predictionDiv.textContent = `Error: ${err}`;
+            });
+        }
+
+        // Send frames every 500ms
+        setInterval(sendFrame, 500);
+    </script>
+</body>
+</html>
